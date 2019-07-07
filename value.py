@@ -6,7 +6,6 @@ import csv
 import numpy as np
 import pandas as pd
 from timer import timeit
-import time
 
 def getColumns(df):
   return list(df.columns)
@@ -41,17 +40,47 @@ def getEventValueFieldJson(fieldValue):
     return json.loads(fieldValue)
   return None
 
-@timeit
-def processFile(df,col):
-  for i in range(len(df)):
-    csvValue = df[col][i]
-    jsonData = getEventValueFieldJson(csvValue)
+def initializeColumnDict(df,col):
+  cols = dict()
+  values = df[col].values
+  keys=None
+  jsonData=None
+  for val in values:
+    jsonData = getEventValueFieldJson(val)
+    #print(jsonData)
     if jsonData is not None:
-      for colName,colValue in jsonData.items():
-        df = addColumnValues(df,colName,colValue,i)
-  return df
+      keys = jsonData.keys()
+      #have to intialize...not many colunns...
+      for key in keys:
+        cols[key]=[]
+
+  return cols
 
 @timeit
+def processFile(df,col):
+  # for i in range(len(df)):
+  #   csvValue = df[col][i]
+  #   jsonData = getEventValueFieldJson(csvValue)
+  #   if jsonData is not None:
+  #     for colName,colValue in jsonData.items():
+  #       df = addColumnValues(df,colName,colValue,i)
+  # return df
+
+  #create a set of columns
+  cols = initializeColumnDict(df,col)
+  for val in df[col].values:
+    jsonData = getEventValueFieldJson(val)
+    if jsonData is not None:
+      for k in cols:
+        cols.get(k).append(jsonData.get(k) if jsonData.get(k) is not None else "")
+    else:
+      for k in cols:
+        cols.get(k).append("")      
+
+  for k,v in cols.items():
+    df[k]=v
+  return df
+  
 def readFile():
   return pd.read_csv(args.csvfile,dtype={"Event Revenue": np.float64,"Postal Code":str,"Region":str,"DMA":str})
 
@@ -64,11 +93,9 @@ def process():
   
 
 if __name__=='__main__':
-  sTime = time.time()
   parser = argparse.ArgumentParser(description='Add columns to AppsFlyer csv file by processing the json in the Event Value column.')
   parser.add_argument('csvfile', type=str, help='AppsFlyer csv export')
   parser.add_argument('col', type=str, help='Column Name to parse json')  
   parser.add_argument('--output', type=str, help='Output file name.  If not provided, the output file will be named output.csv')  
   args = parser.parse_args()
-  print("argparse time: {}".format(time.time()-sTime))
   process()
