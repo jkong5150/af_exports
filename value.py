@@ -6,6 +6,7 @@ import csv
 import numpy as np
 import pandas as pd
 from timer import timeit
+import urllib.parse as urlparse
 
 @timeit
 def writeFile(df,fileName):
@@ -13,7 +14,7 @@ def writeFile(df,fileName):
     fileName='output.csv'
   df.to_csv(fileName,index=False)
 
-def getEventValueFieldJson(fieldValue):
+def getField(fieldValue):
   def is_json(fieldValue):
     try:
       json.loads(fieldValue)
@@ -31,7 +32,7 @@ def initializeColumnDict(df,col):
   keys=None
   jsonData=None
   for val in values:
-    jsonData = getEventValueFieldJson(val)
+    jsonData = getField(val)
     if jsonData is not None:
       keys = jsonData.keys()
       #have to intialize...not many colunns...
@@ -41,7 +42,7 @@ def initializeColumnDict(df,col):
   return cols
 
 def processJson(val,cols):
-  jsonData = getEventValueFieldJson(val)
+  jsonData = getField(val)
   if jsonData is not None:
     for k in cols:
       cols.get(k).append(jsonData.get(k) if jsonData.get(k) is not None else "")
@@ -55,14 +56,28 @@ def addColumns(df,cols):
     df[k]=v  
   return df
 
+def processUrlParams(val,cols):
+  url = urlparse.parse_qs(urlparse.urlparse(url).query)
+  if url is not None:
+    for k in cols:
+      cols.get(k).append(jsonData.get(k) if jsonData.get(k) is not None else "")
+  else:
+    for k in cols:
+      cols.get(k).append("")
+  return cols
+
 @timeit
 def processFile(df,col):
   #create a set of columns
   cols = initializeColumnDict(df,col)
+  #define options
+  options={'urlparams': processUrlParams,'json': processJson}
+  
+  #for every column
   for val in df[col].values:
-    #if field contains json
-    cols = processJson(val,cols)
-    #or process url params
+    #cols = processJson(val,cols)
+    cols = options[args.format](val,cols)
+
   #add the columnns - might be better way...
   return addColumns(df,cols)
   
@@ -76,12 +91,12 @@ def process():
   df = readFile()
   df = processFile(df,args.col)
   writeFile(df,args.output)
-  
 
 if __name__=='__main__':
   parser = argparse.ArgumentParser(description='Add columns to AppsFlyer csv file by processing the json in the Event Value column.')
   parser.add_argument('csvfile', type=str, help='AppsFlyer csv export')
-  parser.add_argument('col', type=str, help='Column Name to parse json')  
+  parser.add_argument('col', type=str, help='Column Name to parse (json or url params')
+  parser.add_argument('--format', default='urlparams', help='json or params')
   parser.add_argument('--output', type=str, help='Output file name.  If not provided, the output file will be named output.csv')  
   args = parser.parse_args()
   process()
