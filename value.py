@@ -18,11 +18,26 @@ def getField(fieldValue):
   def is_json(fieldValue):
     try:
       json.loads(fieldValue)
+      return True
     except ValueError as e:
       return False
-    return True
-  if is_json(fieldValue):
-    return json.loads(fieldValue)
+
+  if fieldValue is None or not fieldValue:
+    return None
+
+  if args.format=='json':
+    if is_json(fieldValue):
+      return json.loads(fieldValue)
+    else: 
+      return None
+  #default
+  #validate it is a query object.
+
+  else:
+    print(type(fieldValue))
+    print(fieldValue)
+    return urlparse.parse_qs(urlparse.urlparse(fieldValue).query)
+
   return None
 
 @timeit
@@ -30,15 +45,15 @@ def initializeColumnDict(df,col):
   cols = dict()
   values = df[col].values
   keys=None
-  jsonData=None
+  data=None
   for val in values:
-    jsonData = getField(val)
-    if jsonData is not None:
-      keys = jsonData.keys()
+    data = getField(val)
+    if data is not None:
+      keys = data.keys()
       #have to intialize...not many colunns...
       for key in keys:
         cols[key]=[]
-  #get columns from params. (different than json)
+  print(cols)
   return cols
 
 def processJson(val,cols):
@@ -57,10 +72,12 @@ def addColumns(df,cols):
   return df
 
 def processUrlParams(val,cols):
-  url = urlparse.parse_qs(urlparse.urlparse(url).query)
-  if url is not None:
+  q = urlparse.parse_qs(urlparse.urlparse(val).query)
+  if q is not None:
     for k in cols:
-      cols.get(k).append(jsonData.get(k) if jsonData.get(k) is not None else "")
+      #if url.get(k) is not None:
+        # print(url.get(k)[0])
+      cols.get(k).append(list(q.get(k))[0] if q.get(k) is not None else "")
   else:
     for k in cols:
       cols.get(k).append("")
@@ -70,7 +87,8 @@ def processUrlParams(val,cols):
 def processFile(df,col):
   #create a set of columns
   cols = initializeColumnDict(df,col)
-  #define options
+  print(cols)
+  # #define options
   options={'urlparams': processUrlParams,'json': processJson}
   
   #for every column
@@ -78,12 +96,12 @@ def processFile(df,col):
     #cols = processJson(val,cols)
     cols = options[args.format](val,cols)
 
-  #add the columnns - might be better way...
+  # #add the columnns - might be better way...
   return addColumns(df,cols)
   
   
 def readFile():
-  return pd.read_csv(args.csvfile,dtype={"Event Revenue": np.float64,"Postal Code":str,"Region":str,"DMA":str})
+  return pd.read_csv(args.csvfile,dtype={"Event Revenue": np.float64,"Postal Code":str,"Region":str,"DMA":str,"Original URL":str})
 
 @timeit
 def process():
@@ -93,7 +111,7 @@ def process():
   writeFile(df,args.output)
 
 if __name__=='__main__':
-  parser = argparse.ArgumentParser(description='Add columns to AppsFlyer csv file by processing the json in the Event Value column.')
+  parser = argparse.ArgumentParser(description='Add columns to AppsFlyer csv file by processing the jsonor urlparams in any column.')
   parser.add_argument('csvfile', type=str, help='AppsFlyer csv export')
   parser.add_argument('col', type=str, help='Column Name to parse (json or url params')
   parser.add_argument('--format', default='urlparams', help='json or params')
