@@ -28,15 +28,14 @@ def getField(fieldValue):
   if args.format=='json':
     if is_json(fieldValue):
       return json.loads(fieldValue)
-    else: 
+    else:
       return None
   #default
   #validate it is a query object.
 
   else:
-    print(type(fieldValue))
-    print(fieldValue)
-    return urlparse.parse_qs(urlparse.urlparse(fieldValue).query)
+    if isinstance(fieldValue,str):
+      return urlparse.parse_qs(urlparse.urlparse(fieldValue).query)
 
   return None
 
@@ -53,7 +52,7 @@ def initializeColumnDict(df,col):
       #have to intialize...not many colunns...
       for key in keys:
         cols[key]=[]
-  print(cols)
+  #print(cols)
   return cols
 
 def processJson(val,cols):
@@ -72,11 +71,10 @@ def addColumns(df,cols):
   return df
 
 def processUrlParams(val,cols):
-  q = urlparse.parse_qs(urlparse.urlparse(val).query)
+  # q = urlparse.parse_qs(urlparse.urlparse(val).query)
+  q =getField(val)
   if q is not None:
     for k in cols:
-      #if url.get(k) is not None:
-        # print(url.get(k)[0])
       cols.get(k).append(list(q.get(k))[0] if q.get(k) is not None else "")
   else:
     for k in cols:
@@ -87,8 +85,7 @@ def processUrlParams(val,cols):
 def processFile(df,col):
   #create a set of columns
   cols = initializeColumnDict(df,col)
-  print(cols)
-  # #define options
+  #define options
   options={'urlparams': processUrlParams,'json': processJson}
   
   #for every column
@@ -101,7 +98,15 @@ def processFile(df,col):
   
   
 def readFile():
-  return pd.read_csv(args.csvfile,dtype={"Event Revenue": np.float64,"Postal Code":str,"Region":str,"DMA":str,"Original URL":str})
+  try:
+    file = pd.read_csv(args.csvfile,dtype={"Event Revenue": np.float64,"Postal Code":str,"Region":str,"DMA":str,"Original URL":str})
+  except FileNotFoundError as e:
+    print("File {} does not exist".format(args.csvfile))
+    sys.exit()
+  except Exception as e:
+    sys.exit()
+
+  return file 
 
 @timeit
 def process():
@@ -111,10 +116,10 @@ def process():
   writeFile(df,args.output)
 
 if __name__=='__main__':
-  parser = argparse.ArgumentParser(description='Add columns to AppsFlyer csv file by processing the jsonor urlparams in any column.')
+  parser = argparse.ArgumentParser(description='Add columns to AppsFlyer csv export file by processing the json or urlparams in any column.')
   parser.add_argument('csvfile', type=str, help='AppsFlyer csv export')
-  parser.add_argument('col', type=str, help='Column Name to parse (json or url params')
-  parser.add_argument('--format', default='urlparams', help='json or params')
+  parser.add_argument('col', type=str, help='Column Name to parse (json or url with params)')
+  parser.add_argument('--format', default='urlparams', help='\'json\' or \'urlparams\'.  The default is \'urlparams\'')
   parser.add_argument('--output', type=str, help='Output file name.  If not provided, the output file will be named output.csv')  
   args = parser.parse_args()
   process()
