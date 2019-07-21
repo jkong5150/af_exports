@@ -19,7 +19,8 @@ def getField(fieldValue):
     try:
       json.loads(fieldValue)
       return True
-    except ValueError as e:
+    except Exception as e:
+      print("Unable to parse json: {}".format(e))
       return False
 
   if fieldValue is None or not fieldValue:
