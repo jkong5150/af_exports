@@ -25,8 +25,8 @@ optional arguments:
                    named output.csv
 
 #Examples
-> ./value.py MyCompanyInstalls.csv "Original URL"
-> ./value.py MyCompanyInAppEvents.csv "Event Value" --format=json
-> ./value.py MyCompanyInstalls.csv "Original URL" --format==urlparams
-> --output=MyCompanyOutput.csv
+- ./value.py MyCompanyInstalls.csv "Original URL"
+- ./value.py MyCompanyInAppEvents.csv "Event Value" --format=json
+- ./value.py MyCompanyInstalls.csv "Original URL" --format==urlparams
+--output=MyCompanyOutput.csv
 
