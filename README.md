@@ -24,9 +24,10 @@ optional arguments:
   --output OUTPUT  Output file name. If not provided, the output file will be
                    named output.csv
 
-#Examples
+# Examples
+Run the following on the command line 
 - ./value.py MyCompanyInstalls.csv "Original URL"
 - ./value.py MyCompanyInAppEvents.csv "Event Value" --format=json
-- ./value.py MyCompanyInstalls.csv "Original URL" --format==urlparams
+- ./value.py MyCompanyInstalls.csv "Original URL" --format=urlparams
 --output=MyCompanyOutput.csv
 
